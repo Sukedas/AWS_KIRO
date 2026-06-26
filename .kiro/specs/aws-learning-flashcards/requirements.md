@@ -45,14 +45,15 @@ The AWS Learning Flash Cards application is an AI-powered educational platform t
 
 #### Acceptance Criteria
 
-1. THE Auth_Service SHALL support user registration with a unique email address and a password of at least 8 characters.
-2. WHEN a Guest submits valid registration credentials, THE Auth_Service SHALL create a User account and issue a session token.
+1. THE Auth_Service SHALL support user registration with a unique email address of at most 254 characters and a password between 8 and 128 characters (inclusive).
+2. WHEN a Guest submits valid registration credentials, THE Auth_Service SHALL create a User account and issue a session token valid for 24 hours from issuance.
 3. IF a Guest submits a registration request with an email address already associated with an existing account, THEN THE Auth_Service SHALL return an error indicating the email is already in use.
-4. WHEN a registered User submits valid login credentials, THE Auth_Service SHALL authenticate the User and issue a session token.
+4. WHEN a registered User submits valid login credentials, THE Auth_Service SHALL authenticate the User and issue a session token valid for 24 hours from issuance.
 5. IF a User submits incorrect login credentials, THEN THE Auth_Service SHALL return an authentication error without revealing which field is incorrect.
-6. WHEN an authenticated User requests logout, THE Auth_Service SHALL invalidate the active session token.
-7. WHEN a User session token expires, THE Auth_Service SHALL require the User to re-authenticate before accessing protected resources.
-8. THE Auth_Service SHALL enforce HTTPS for all authentication requests.
+6. WHEN an authenticated User requests logout, THE Auth_Service SHALL invalidate the active session token; IF session token invalidation fails, THE Auth_Service SHALL abort the logout operation, leaving the User's account data and active session state unchanged.
+7. WHEN a User's session token expires or is invalidated, THE Auth_Service SHALL reject any subsequent protected-resource request with an authentication error and require the User to re-authenticate.
+8. WHEN a non-HTTPS authentication request is received, THE Auth_Service SHALL reject the request and return an error indicating that a secure connection is required.
+9. THE Auth_Service SHALL enforce HTTPS for all authentication requests.
 
 ---
 
@@ -62,11 +63,13 @@ The AWS Learning Flash Cards application is an AI-powered educational platform t
 
 #### Acceptance Criteria
 
-1. THE Application SHALL store a User profile containing: id, username, email, learning_level, and created_at.
+1. THE Application SHALL store a User profile containing: id (UUID), username (text), email (text), learning_level (text), and created_at (timestamp).
 2. WHEN a User creates an account, THE Application SHALL set the default learning_level to `beginner`.
-3. WHEN a User submits a profile update with a valid username and learning_level, THE Supabase_Client SHALL persist the changes.
-4. IF a User submits a profile update with a username containing fewer than 3 or more than 50 characters, THEN THE Validator SHALL reject the request and return a descriptive validation error.
-5. WHILE a User is authenticated, THE Application SHALL display the User's username and current learning_level on the Dashboard.
+3. WHEN a User submits a profile update containing one or more valid fields, THE Supabase_Client SHALL persist each valid field independently; fields that fail validation SHALL be skipped without affecting the persistence of valid fields.
+4. IF a User submits a profile update with a username that is not a string, or a username containing fewer than 3 or more than 50 characters, THEN THE Validator SHALL reject the username field and return a descriptive validation error message; non-string values SHALL be rejected before length constraints are checked.
+5. IF a User submits a profile update with a learning_level value that is not one of `beginner`, `intermediate`, or `advanced`, THEN THE Validator SHALL reject the learning_level field and return a descriptive validation error message.
+6. WHILE a User is authenticated, THE Application SHALL display the User's username and current learning_level on the Dashboard.
+7. WHEN a User submits a profile update and all supplied fields fail validation, THE Supabase_Client SHALL not issue a database write and THE Application SHALL display the validation errors to the User.
 
 ---
 
@@ -86,11 +89,13 @@ The AWS Learning Flash Cards application is an AI-powered educational platform t
    - Security: IAM, KMS, Cognito
    - Serverless: Lambda, API Gateway, EventBridge
    - AI Services: Amazon Bedrock, SageMaker
-3. WHEN a User navigates to the Topic Browser, THE Application SHALL display all Categories and their associated AWS Topics.
-4. WHEN a User selects a Category, THE Application SHALL display only the AWS Topics belonging to that Category.
-5. WHEN a User enters a search query of at least 2 characters in the Topic Browser, THE Application SHALL display only the AWS Topics whose name or description contains the query string (case-insensitive).
-6. IF no AWS Topics match a search query, THEN THE Application SHALL display a message indicating no results were found.
-7. WHILE a User is authenticated, THE Application SHALL display the User's completion percentage for each AWS Topic alongside its listing.
+3. WHEN a User navigates to the Topic Browser with no Category filter active, THE Application SHALL display all Categories and their associated AWS Topics.
+4. WHEN a User selects a Category, THE Application SHALL display only the AWS Topics belonging to that Category and hide AWS Topics belonging to all other Categories.
+5. WHEN a User enters a search query of at least 2 characters in the Topic Browser, THE Application SHALL display only the AWS Topics whose name or description contains the query string (case-insensitive), scoped to the active Category filter if one is selected, otherwise across all Categories.
+6. WHEN a User enters a search query of fewer than 2 characters in the Topic Browser, THE Application SHALL display a message indicating the query is too short and restore the Topic listing to its pre-query state.
+7. IF no AWS Topics match a search query of at least 2 characters, THEN THE Application SHALL display a message indicating no results were found.
+8. WHILE a User is authenticated, THE Application SHALL display the User's completion percentage for each AWS Topic inline with its listing entry; WHEN an AWS Topic contains zero Flash Cards, THE Application SHALL display 0% completion for that Topic.
+9. WHEN an unauthenticated Guest views the Topic Browser, THE Application SHALL display AWS Topics without completion percentages.
 
 ---
 
@@ -100,16 +105,16 @@ The AWS Learning Flash Cards application is an AI-powered educational platform t
 
 #### Acceptance Criteria
 
-1. WHEN a User starts a Study Session for an AWS Topic, THE Application SHALL present Flash Cards from that Topic's Deck in sequence.
-2. THE Application SHALL display the question side of each Flash Card by default when it is presented.
-3. WHEN a User triggers the flip action on a Flash Card, THE Application SHALL reveal the answer and explanation on the reverse side.
-4. WHEN a User has reviewed the answer side, THE Application SHALL present the options to rate the Flash Card with a Knowledge Level of `easy`, `medium`, or `hard`.
-5. WHEN a User assigns a Knowledge Level to a Flash Card, THE Progress_Tracker SHALL update the Progress Record for that User and Flash Card with the new Knowledge Level and the current review date.
-6. WHEN a User marks a Flash Card as `hard`, THE Application SHALL add that Flash Card to a repeat queue for review at the end of the current Study Session.
-7. WHEN all Flash Cards in a Deck have been reviewed and the repeat queue is not empty, THE Application SHALL present the Flash Cards in the repeat queue for a second review.
-8. WHEN a Study Session is completed, THE Application SHALL display a summary showing total cards reviewed, Knowledge Level distribution, and number of cards marked `hard`.
-9. WHILE a Study Session is active, THE Application SHALL display the current card index and the total number of cards in the Deck (e.g., "Card 3 of 20").
-10. IF a Flash Card contains AI-generated hints, THEN THE Application SHALL display a button that reveals those hints on demand without triggering the flip action.
+1. WHEN a User starts a Study Session for an AWS Topic, THE Application SHALL present Flash Cards from that Topic's Deck in sequence, starting from the first card.
+2. THE Application SHALL display the question side of each Flash Card by default when it is first presented in a Study Session.
+3. WHEN a User triggers the flip action on a Flash Card showing the question side, THE Application SHALL reveal the answer and explanation on the reverse side; WHEN a User triggers the flip action on a Flash Card showing the answer side, THE Application SHALL return it to the question side.
+4. WHEN a Flash Card is displaying the answer side, THE Application SHALL present the options to rate the Flash Card with a Knowledge Level of `easy`, `medium`, or `hard`; the Knowledge Level SHALL remain unassigned until the User actively selects one of those options.
+5. WHEN a User assigns a Knowledge Level to a Flash Card, THE Progress_Tracker SHALL update the Progress Record for that User and Flash Card with the new Knowledge Level and the current UTC review date, then advance the Study Session to the next card.
+6. WHEN a User marks a Flash Card as `hard`, THE Application SHALL add that Flash Card to a repeat queue for review at the end of the current Study Session; each Flash Card SHALL appear in the repeat queue at most once per Study Session regardless of how many times it is rated `hard`.
+7. WHEN all Flash Cards in a Deck have been reviewed in the initial pass and the repeat queue is not empty, THE Application SHALL present the Flash Cards in the repeat queue for a second review pass.
+8. WHEN a Study Session is completed (all initial and repeat-queue cards reviewed), THE Application SHALL display a summary screen showing: total cards reviewed, count and percentage of each Knowledge Level (`easy`, `medium`, `hard`), and number of cards that entered the repeat queue.
+9. WHILE a Study Session is active, THE Application SHALL display the current card index and the total number of cards in the current pass (e.g., "Card 3 of 20") updated in real-time as the User progresses.
+10. IF a Flash Card contains AI-generated hints, THEN THE Application SHALL display a "Hint" button on the question side that reveals those hints on demand without triggering the flip action.
 
 ---
 
@@ -121,7 +126,7 @@ The AWS Learning Flash Cards application is an AI-powered educational platform t
 
 1. THE Application SHALL store each Flash Card with the following fields: id, question, answer, explanation, difficulty, aws_category, aws_service, real_world_scenario, ai_generated (boolean flag), and documentation_links (array of URLs).
 2. THE Validator SHALL reject any Flash Card that is missing the question, answer, explanation, difficulty, or aws_category fields.
-3. WHEN a Flash Card is displayed in a Study Session, THE Application SHALL show the question on the front, and the answer, explanation, real_world_scenario, and documentation_links on the back.
+3. THE Application SHALL display the content of a Flash Card (question on front, answer and explanation on back) whenever a Flash Card is displayed, regardless of whether a formal Study Session is active.
 4. WHERE documentation_links are present on a Flash Card, THE Application SHALL render each link as a clickable element that opens the URL in a new browser tab.
 5. WHEN a Flash Card has the ai_generated flag set to true, THE Application SHALL display a visual indicator identifying the card as AI-generated content.
 
@@ -136,9 +141,10 @@ The AWS Learning Flash Cards application is an AI-powered educational platform t
 1. WHEN a User applies a Category filter in the Topic Browser or Study Mode, THE Application SHALL display only Flash Cards belonging to the selected Category.
 2. WHEN a User applies a Difficulty filter, THE Application SHALL display only Flash Cards matching the selected difficulty level (`easy`, `medium`, or `hard`).
 3. WHEN a User applies both a Category filter and a Difficulty filter simultaneously, THE Application SHALL display only Flash Cards matching both criteria.
-4. WHEN a User enters a search query of at least 2 characters in Study Mode, THE Application SHALL filter the Flash Cards to those whose question or explanation contains the query string (case-insensitive).
-5. IF no Flash Cards match the applied filters or search query, THEN THE Application SHALL display a message indicating no cards match the current filters.
-6. WHEN a User clears all filters and search queries, THE Application SHALL restore the full unfiltered Flash Card list.
+4. WHEN a User enters a search query of fewer than 2 characters in Study Mode, THE Application SHALL display a message indicating the query is too short and no results are shown.
+5. WHEN a User enters a search query of at least 2 characters in Study Mode, THE Application SHALL filter the Flash Cards to those whose question or explanation contains the query string (case-insensitive).
+6. IF no Flash Cards match the applied filters or search query, THEN THE Application SHALL display a message indicating no cards match the current filters while hiding the non-matching cards.
+7. WHEN a User clears all filters and search queries, THE Application SHALL restore the full unfiltered Flash Card list.
 
 ---
 
@@ -150,7 +156,7 @@ The AWS Learning Flash Cards application is an AI-powered educational platform t
 
 1. THE Progress_Tracker SHALL create a Progress Record for each Flash Card a User reviews, storing: user_id, flash_card_id, completion_status, score, knowledge_level, and review_date.
 2. WHEN a User completes a Study Session for a Deck, THE Progress_Tracker SHALL mark all reviewed Flash Cards in that Deck as `completed` in their Progress Records.
-3. THE Progress_Tracker SHALL calculate the User's completion percentage for an AWS Topic as: (number of Flash Cards with completion_status `completed`) / (total Flash Cards in Topic) × 100, rounded to the nearest integer.
+3. THE Progress_Tracker SHALL calculate the User's completion percentage for an AWS Topic as: (number of Flash Cards with completion_status `completed`) / (total Flash Cards in Topic) × 100, rounded to the nearest integer; WHEN an AWS Topic contains zero Flash Cards, THE Progress_Tracker SHALL return 0% completion for that Topic.
 4. WHEN a User reviews a Flash Card that already has a Progress Record, THE Progress_Tracker SHALL update the existing record rather than create a duplicate.
 5. THE Application SHALL identify a Flash Card as a "weak concept" for a User WHEN the User has reviewed that Flash Card at least twice AND the most recent Knowledge Level assignment is `hard`.
 
@@ -166,7 +172,7 @@ The AWS Learning Flash Cards application is an AI-powered educational platform t
 2. THE Application SHALL calculate overall progress percentage as: (total Flash Cards marked `completed` across all Topics) / (total Flash Cards in the Application) × 100, rounded to the nearest integer.
 3. THE Dashboard SHALL display a list of AWS Topics in which the User has at least one Flash Card marked as a weak concept.
 4. WHILE a User is authenticated, THE Application SHALL display the date of the User's last Study Session on the Dashboard.
-5. THE Application SHALL display learning statistics on the Dashboard including: total cards reviewed, total study sessions completed, and average Knowledge Level distribution (percentage of `easy`, `medium`, `hard` ratings).
+5. THE Application SHALL display learning statistics on the Dashboard including: total cards reviewed, total study sessions completed, and Knowledge Level distribution (percentage of `easy`, `medium`, `hard` ratings) where the three percentages sum to exactly 100%.
 
 ---
 
@@ -177,7 +183,7 @@ The AWS Learning Flash Cards application is an AI-powered educational platform t
 #### Acceptance Criteria
 
 1. WHEN a User requests AI-generated Flash Cards for an AWS Topic, THE Card_Generator SHALL invoke the AI Service with a structured prompt specifying the Topic, desired difficulty level, and number of cards.
-2. WHEN the AI Service returns a valid response, THE Card_Generator SHALL parse the response into Flash Card objects conforming to the content structure defined in Requirement 5.
+2. WHEN the AI Service returns a valid response, THE Card_Generator SHALL parse the response into Flash Card objects conforming to the content structure defined in Requirement 5; IF parsing fails due to unexpected content structure within an otherwise valid JSON response, THE Card_Generator SHALL treat the failure as an invalid response and apply the error handling defined in AC6.
 3. THE Card_Generator SHALL set the ai_generated flag to true on all Flash Cards it creates.
 4. WHEN a User requests AI-generated Flash Cards and the AI Service is unavailable, THE Application SHALL display a descriptive error message and preserve any previously generated cards.
 5. THE Prompt_Builder SHALL construct prompts that instruct the AI Service to produce Flash Cards in a defined JSON schema containing: question, answer, explanation, difficulty, aws_category, aws_service, real_world_scenario, and documentation_links.
@@ -195,7 +201,7 @@ The AWS Learning Flash Cards application is an AI-powered educational platform t
 
 1. WHEN a User submits an explanation request for a concept via the AI Chat interface, THE AI Service SHALL return an explanation within 15 seconds under normal operating conditions.
 2. THE Prompt_Builder SHALL include the AWS Topic context, the User's current learning_level, and the specific concept text when constructing explanation prompts.
-3. IF the AI Service returns an error for an explanation request, THEN THE Application SHALL display a descriptive error message and offer the User the option to retry.
+3. IF the AI Service returns an error for an explanation request, THEN THE Application SHALL display a descriptive error message and offer the User the option to retry; WHEN the AI Service returns both an explanation and an error simultaneously, THE Application SHALL display the explanation and suppress the error.
 4. WHEN the AI Service returns an explanation, THE Application SHALL display the explanation in the AI Chat interface with a visual distinction from User messages.
 5. THE Application SHALL retain the AI Chat conversation history for the duration of the current browser session.
 
@@ -212,7 +218,7 @@ The AWS Learning Flash Cards application is an AI-powered educational platform t
 3. WHEN the AI Service returns valid practice questions, THE Application SHALL present them in a Quiz interface with options selectable by the User.
 4. WHEN a User submits an answer in the Quiz interface, THE Application SHALL immediately display whether the answer is correct and show the explanation.
 5. WHEN a Quiz is completed, THE Application SHALL display a score summary showing the number of correct answers out of total questions.
-6. IF the AI Service returns malformed practice question data, THEN THE Question_Generator SHALL log the error and return a descriptive error message to the User.
+6. IF any failure occurs in the practice question generation process, including malformed AI data or other errors, THEN THE Question_Generator SHALL log the error and return a descriptive error message to the User.
 
 ---
 
@@ -223,8 +229,8 @@ The AWS Learning Flash Cards application is an AI-powered educational platform t
 #### Acceptance Criteria
 
 1. WHEN a User requests study recommendations, THE Recommendation_Engine SHALL supply the AI Service with the User's Progress Records including completion percentages and weak concepts.
-2. WHEN the AI Service returns a recommendation response, THE Recommendation_Engine SHALL parse and display a ranked list of at most 5 recommended AWS Topics with a brief rationale for each.
-3. IF the User has no Progress Records, THEN THE Recommendation_Engine SHALL recommend AWS Topics from the Fundamentals category as a starting point.
+2. IF the User has no Progress Records OR has Progress Records showing 0% completion across all AWS Topics, THEN THE Recommendation_Engine SHALL recommend AWS Topics from the Fundamentals category as a starting point.
+3. WHEN the AI Service returns a recommendation response, THE Recommendation_Engine SHALL parse and display a ranked list of at most 5 recommended AWS Topics with a brief rationale for each; WHEN the AI Service returns more than 5 recommendations, THE Recommendation_Engine SHALL display the top 5 and discard the remainder.
 4. WHEN the AI Service is unavailable for recommendations, THE Application SHALL fall back to recommending the AWS Topic with the lowest completion percentage for the User.
 
 ---
@@ -236,7 +242,7 @@ The AWS Learning Flash Cards application is an AI-powered educational platform t
 #### Acceptance Criteria
 
 1. WHEN a User requests a hint for a Flash Card, THE Hint_Generator SHALL invoke the AI Service with a prompt containing the Flash Card's question and AWS Topic context, without including the answer.
-2. WHEN the AI Service returns a valid hint, THE Application SHALL display the hint in the Flash Card view without triggering the flip action.
+2. WHEN the AI Service returns a valid hint, THE Application SHALL display the hint in the Flash Card view without triggering the flip action; IF the AI Service returns an invalid or malformed hint, THE Application SHALL fall back to displaying any pre-stored hints from the Flash Card's data.
 3. THE Application SHALL allow at most 3 hint requests per Flash Card per Study Session.
 4. IF the AI Service is unavailable when a hint is requested, THEN THE Application SHALL display any pre-stored hints from the Flash Card's data and notify the User that AI hints are currently unavailable.
 5. WHEN a hint is displayed, THE Application SHALL visually indicate how many hint requests remain for that Flash Card (e.g., "Hint 1 of 3").
@@ -257,7 +263,7 @@ The AWS Learning Flash Cards application is an AI-powered educational platform t
 6. THE `ai_history` table SHALL contain columns: id (UUID, primary key), user_id (UUID, foreign key referencing `users`), prompt (text), response (text), request_type (text), and created_at (timestamp).
 7. THE Supabase_Client SHALL enforce RLS policies so that a User can only read and write their own rows in the `progress` and `ai_history` tables.
 8. THE Supabase_Client SHALL enforce RLS policies so that `aws_topics` and `flash_cards` are readable by all authenticated Users but writable only by service-role credentials.
-9. WHEN a User's account is deleted, THE Supabase_Client SHALL cascade-delete all associated rows in the `progress` and `ai_history` tables.
+9. WHEN a User's account is deleted, THE Supabase_Client SHALL attempt to cascade-delete all associated rows in the `progress` and `ai_history` tables; WHERE deletion of records in one table fails, THE Supabase_Client SHALL continue attempting deletion in the other table and SHALL report which deletions succeeded or failed.
 
 ---
 
@@ -270,7 +276,7 @@ The AWS Learning Flash Cards application is an AI-powered educational platform t
 1. THE AI Service SHALL only be invoked from server-side API routes, never directly from client-side browser code.
 2. THE Prompt_Builder SHALL sanitize all User-supplied text before including it in any prompt sent to the AI Service.
 3. THE Prompt_Builder SHALL include a system-level instruction in every prompt that restricts the AI Service to responding only about AWS and cloud computing topics.
-4. IF the AI Service returns a response that contains content outside the AWS/cloud computing domain as detected by a server-side content filter, THEN THE AI Service SHALL discard the response and return an error to the User.
+4. IF the AI Service returns a response that contains content outside the AWS/cloud computing domain as detected by a server-side content filter, OR IF the AI Service returns no response at all, THEN THE AI Service SHALL discard the response and return an error to the User.
 5. THE Application SHALL not expose Amazon Bedrock API credentials in any client-side code or public API response.
 6. WHEN an AI Service request fails due to an authorization error, THE Application SHALL log the error server-side and return a generic error message to the User without exposing credential details.
 
@@ -285,7 +291,7 @@ The AWS Learning Flash Cards application is an AI-powered educational platform t
 1. THE Bedrock_Client SHALL communicate with Amazon Bedrock using AWS SDK credentials stored as server-side environment variables.
 2. WHEN the Bedrock_Client sends a request to Amazon Bedrock, THE Bedrock_Client SHALL specify the model ID, prompt, maximum token count, and temperature parameter.
 3. IF Amazon Bedrock is unreachable or returns a service error, THEN THE Bedrock_Client SHALL attempt up to 2 retries with exponential backoff before returning an error to the calling module.
-4. WHERE a fallback GenAI provider is configured via environment variable, THE Bedrock_Client SHALL route requests to the fallback provider when Amazon Bedrock is unavailable after retries.
+4. WHERE a fallback GenAI provider is configured via environment variable, THE Bedrock_Client SHALL automatically route requests to the fallback provider when Amazon Bedrock is unavailable after all retry attempts are exhausted.
 5. THE Bedrock_Client SHALL log all request durations and error codes server-side for observability without logging prompt content that may contain User data.
 
 ---
@@ -296,7 +302,7 @@ The AWS Learning Flash Cards application is an AI-powered educational platform t
 
 #### Acceptance Criteria
 
-1. THE Application's repository SHALL contain a `.kiro/settings.kiro` file specifying: project name, description, allowed commands, forbidden commands, and allowed file paths.
+1. THE Application's repository SHALL contain a `.kiro/settings.kiro` file specifying: project name, description, allowed commands, forbidden commands, and allowed file paths; THE settings file SHALL be a prerequisite for all other Kiro configuration components to be valid.
 2. THE Application's repository SHALL contain Kiro steering files defining rules for: clean architecture conventions, Supabase best practices, and UI consistency standards.
 3. THE Application's repository SHALL contain reusable Kiro skills for: AWS Knowledge, Flash Card Generator, Supabase integration, and UI Implementation.
 4. THE steering files SHALL forbid direct database access from frontend components and SHALL require all database interactions to go through the Supabase_Client module.
@@ -312,7 +318,7 @@ The AWS Learning Flash Cards application is an AI-powered educational platform t
 
 1. THE Application SHALL implement the following main screens: Login/Register, Dashboard, Topic Browser, Flash Card Study, Quiz, and AI Chat/Hints.
 2. THE Application SHALL use Tailwind CSS for all styling with a defined design token set covering colors, typography, spacing, and breakpoints.
-3. THE Application SHALL be responsive, adapting layouts for mobile (320px–767px), tablet (768px–1023px), and desktop (1024px and above) viewport widths.
+3. THE Application SHALL be responsive, adapting layouts for mobile (320px–767px), tablet (768px–1023px), and desktop (1024px and above) viewport widths; WHEN the viewport width is below 320px, THE Application SHALL display a notice informing the User that the minimum supported width is 320px.
 4. THE Router SHALL redirect unauthenticated Users who attempt to access protected routes to the Login screen.
 5. WHEN a User navigates between screens, THE Application SHALL preserve active Study Session state so that progress is not lost on navigation.
 6. THE Application SHALL display a loading indicator WHEN any asynchronous operation (data fetch, AI request) is in progress.

@@ -1,0 +1,62 @@
+{
+  "project": {
+    "name": "aws-learning-flashcards",
+    "description": "AI-powered AWS Learning Flash Cards application — interactive study platform with Generative AI, built on Next.js and Supabase."
+  },
+  "tools": {
+    "allowed": [
+      "create_source_files",
+      "modify_application_code",
+      "generate_documentation",
+      "run_tests",
+      "run_linter",
+      "run_build",
+      "read_files",
+      "search_codebase"
+    ],
+    "forbidden": [
+      "delete_secrets",
+      "modify_env_without_approval",
+      "remove_migration_files",
+      "drop_database_tables",
+      "modify_rls_policies_without_approval"
+    ]
+  },
+  "paths": {
+    "allowed": [
+      "app/**",
+      "components/**",
+      "lib/**",
+      "types/**",
+      "supabase/migrations/**",
+      "docs/**",
+      ".kiro/**",
+      "tailwind.config.ts",
+      "next.config.ts",
+      "package.json",
+      "tsconfig.json"
+    ],
+    "restricted": [
+      ".env*",
+      ".env.local",
+      ".env.production",
+      "supabase/.temp/**"
+    ]
+  },
+  "commands": {
+    "allowed": [
+      "npm run dev",
+      "npm run build",
+      "npm run lint",
+      "npm run test",
+      "npx supabase db push",
+      "npx supabase migration new"
+    ],
+    "forbidden": [
+      "npx supabase db reset --linked",
+      "DROP TABLE",
+      "DELETE FROM users",
+      "rm -rf"
+    ]
+  }
+}
