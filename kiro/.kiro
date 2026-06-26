@@ -1,0 +1,31 @@
+{
+  "name": "aws-genai-flashcards",
+  "description": "AI powered AWS learning platform using flash cards",
+  "language": "en",
+  "allowedTools": [
+    "filesystem",
+    "terminal",
+    "git",
+    "aws-cli"
+  ],
+  "allowedPaths": [
+    "./src",
+    "./docs",
+    "./tests"
+  ],
+  "restrictedPaths": [
+    "./.env",
+    "./secrets"
+  ],
+  "allowedCommands": [
+    "npm",
+    "node",
+    "python",
+    "docker",
+    "git"
+  ],
+  "forbiddenCommands": [
+    "rm -rf",
+    "delete system files"
+  ]
+}
