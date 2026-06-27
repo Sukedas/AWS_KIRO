@@ -12,16 +12,16 @@
 - [x] 1.9 Create environment variable template (.env.example)
 
 ## Milestone 2 — Frontend (Design System + Core UI)
-- [ ] 2.1 Configure Tailwind design tokens
-- [ ] 2.2 Build primitive UI components (Button, Card, Badge, Input, Spinner, ProgressBar)
-- [ ] 2.3 Build layout components (Navbar, Sidebar, bottom tab bar)
-- [ ] 2.4 Build FlashCard component with CSS 3D flip animation
-- [ ] 2.5 Build Login and Register pages
-- [ ] 2.6 Build Dashboard page
-- [ ] 2.7 Build Topic Browser page
-- [ ] 2.8 Build Flash Card Study page
-- [ ] 2.9 Build Quiz page
-- [ ] 2.10 Build AI Chat page
+- [x] 2.1 Configure Tailwind design tokens
+- [x] 2.2 Build primitive UI components (Button, Card, Badge, Input, Spinner, ProgressBar)
+- [x] 2.3 Build layout components (Navbar, Sidebar, bottom tab bar)
+- [x] 2.4 Build FlashCard component with CSS 3D flip animation
+- [x] 2.5 Build Login and Register pages
+- [x] 2.6 Build Dashboard page
+- [x] 2.7 Build Topic Browser page
+- [x] 2.8 Build Flash Card Study page
+- [x] 2.9 Build Quiz page
+- [x] 2.10 Build AI Chat page
 
 ## Milestone 3 — Supabase Backend
 - [ ] 3.1 Implement Auth Service (register, login, logout)
