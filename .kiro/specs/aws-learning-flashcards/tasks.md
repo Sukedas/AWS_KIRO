@@ -24,20 +24,20 @@
 - [x] 2.10 Build AI Chat page
 
 ## Milestone 3 — Supabase Backend
-- [ ] 3.1 Implement Auth Service (register, login, logout)
-- [ ] 3.2 Implement Progress Tracker module
-- [ ] 3.3 Implement user profile management
-- [ ] 3.4 Create seed data for AWS topics and flash cards
-- [ ] 3.5 Wire up all Supabase queries to frontend pages
+- [x] 3.1 Implement Auth Service (register, login, logout)
+- [x] 3.2 Implement Progress Tracker module
+- [x] 3.3 Implement user profile management
+- [x] 3.4 Create seed data for AWS topics and flash cards
+- [x] 3.5 Wire up all Supabase queries to frontend pages
 
 ## Milestone 4 — GenAI Features
-- [ ] 4.1 Implement Bedrock Client with retry and fallback
-- [ ] 4.2 Implement Prompt Builder with sanitization
-- [ ] 4.3 Build /api/ai/generate-cards route + Card Generator
-- [ ] 4.4 Build /api/ai/explain route + AI Chat
-- [ ] 4.5 Build /api/ai/questions route + Question Generator
-- [ ] 4.6 Build /api/ai/recommend route + Recommendation Engine
-- [ ] 4.7 Build /api/ai/hint route + Hint Generator
+- [x] 4.1 Implement Bedrock Client with retry and fallback
+- [x] 4.2 Implement Prompt Builder with sanitization
+- [x] 4.3 Build /api/ai/generate-cards route + Card Generator
+- [x] 4.4 Build /api/ai/explain route + AI Chat
+- [x] 4.5 Build /api/ai/questions route + Question Generator
+- [x] 4.6 Build /api/ai/recommend route + Recommendation Engine
+- [x] 4.7 Build /api/ai/hint route + Hint Generator
 
 ## Milestone 5 — Testing & Deployment
 - [ ] 5.1 Unit tests for Validator, Progress Tracker, Prompt Builder
